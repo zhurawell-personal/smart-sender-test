@@ -1,4 +1,4 @@
-# Smart Sender frontend test
+﻿# Smart Sender frontend test
 
 A small React + TypeScript app for signing in, viewing webhooks, and editing them. MSW provides a fake API during development.
 
@@ -20,9 +20,19 @@ The test checks that two requests with an expired session share one session refr
 ## Demo account
 
 - Email: `user1@example.com`
-- Password: `user1pass`
+- P## Key decisions
 
-The app separates API requests, application state, and UI so each part has a clear role. MSW simulates the backend for the login, webhook list, and editing flows.
+- **The app separates API requests, application state, and UI so each part has a clear role. MSW simulates the backend for the login, webhook list, and editing flows.
+
+## Key decisions
+
+- **Shared token rotation.** On a 401 the client calls `/auth/token/rotate` and retries the request once. Concurrent 401s share a single in-flight rotate promise, which is reset after it settles.
+- **Session data.** `device_session_token` lives only in memory. The `fingerprint` (32 hex chars) is generated once and kept in localStorage. The client never sees session tokens, the mock plays the role of an HttpOnly cookie.
+- **CSRF.** The token is fetched once before the first other request and sent on POST and PUT. On a 419 the token is refetched and the request retried once.
+- **URL as the source of truth.** `page` and `search` live in the query string, so reload and back/forward work. Changing the search resets the page to 1.
+- **Server validation errors.** 422 payloads are mapped to form fields via React Hook Form.
+- **Layering.** Components never call `fetch` directly: API functions, auth state and TanStack Query hooks are separate from the UI.
+
 
 ## Project structure
 
@@ -47,13 +57,5 @@ The app separates API requests, application state, and UI so each part has a cle
 - [WebhookEditForm.tsx](src/features/webhooks/WebhookEditForm.tsx) edits a webhook and shows server validation errors.
 - React Hook Form manages the login and edit form fields.
 
-### Mock API
-
-- [browser.ts](src/mocks/browser.ts) starts MSW in the browser.
-- [handlers.ts](src/mocks/handlers.ts) defines mock API endpoints and their responses. [db.ts](src/mocks/db.ts) stores mock webhooks and session state.
-
-### Automated test
-
-- [mock-api.test.ts](tests/mock-api.test.ts) checks that parallel expired requests share one session refresh.
-
 Note: Signing in again after a page reload is expected because the mock session is stored in memory.
+e mock session is stored in memory.
