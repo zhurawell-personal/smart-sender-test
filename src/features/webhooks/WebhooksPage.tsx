@@ -13,8 +13,13 @@ function WebhooksPage() {
   const [webhookToEdit, setWebhookToEdit] = useState<Webhook | null>(null)
   const page = Math.max(1, Number(searchParams.get('page')) || 1)
   const search = searchParams.get('search') ?? ''
-  const [searchState, setSearchState] = useState({ urlSearch: search, input: search })
-  const searchInput = searchState.urlSearch === search ? searchState.input : search
+  // discard stale drafts when browser navigation changes the url
+  const [searchState, setSearchState] = useState({
+    url: searchParams.toString(),
+    input: search,
+  })
+  const currentUrl = searchParams.toString()
+  const searchInput = searchState.url === currentUrl ? searchState.input : search
   // load the list for the current page and search
   const { data, isPending, isError, error } = useQuery({
     queryKey: ['webhooks', page, search],
@@ -32,6 +37,7 @@ function WebhooksPage() {
       else nextParams.delete('search')
       nextParams.delete('page')
       setSearchParams(nextParams)
+      setSearchState({ url: nextParams.toString(), input: searchInput })
     }, 300)
 
     // cancel the old timer when the input changes again
@@ -75,7 +81,7 @@ function WebhooksPage() {
           id="webhook-search"
           type="search"
           value={searchInput}
-          onChange={(event) => setSearchState({ urlSearch: search, input: event.target.value })}
+          onChange={(event) => setSearchState({ url: currentUrl, input: event.target.value })}
           placeholder="Search webhooks"
           className="mb-5 w-full max-w-sm rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
         />
