@@ -20,7 +20,7 @@ The test checks that two requests with an expired session share one session refr
 ## Demo account
 
 - Email: `user1@example.com`
-- P## Key decisions
+- Password: `user1pass`
 
 - **The app separates API requests, application state, and UI so each part has a clear role. MSW simulates the backend for the login, webhook list, and editing flows.
 
@@ -33,8 +33,6 @@ The test checks that two requests with an expired session share one session refr
 - **Server validation errors.** 422 payloads are mapped to form fields via React Hook Form.
 - **Layering.** Components never call `fetch` directly: API functions, auth state and TanStack Query hooks are separate from the UI.
 
-
-## Project structure
 
 ### API logic
 
