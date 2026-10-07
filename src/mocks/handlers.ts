@@ -128,6 +128,7 @@ export const handlers = [
       })
     }
 
+    state.deviceToken = null
     state.sessionStarted = true
     state.expiresAt = Date.now() + SESSION_TTL_MS
     return HttpResponse.json({})

@@ -1,46 +1,54 @@
-import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
+import { useState } from 'react'
+import { useLocation, useNavigate } from 'react-router'
+import { useForm } from 'react-hook-form'
 import { ApiError } from '../../shared/api/apiClient.ts'
 import { useAuth } from './authContext.tsx'
+
+type LoginLocationState = {
+  from?: string
+}
+
+type LoginFormValues = {
+  email: string
+  password: string
+}
 
 function LoginPage() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [pending, setPending] = useState(false)
-  const [emailError, setEmailError] = useState('')
-  const [passwordError, setPasswordError] = useState('')
+  const location = useLocation()
   const [formError, setFormError] = useState('')
+  const {
+    register,
+    handleSubmit,
+    setError,
+    clearErrors,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>()
 
   // handle form submission and coordinate the login flow
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setEmailError('')
-    setPasswordError('')
+  async function onSubmit({ email, password }: LoginFormValues) {
+    clearErrors()
     setFormError('')
-    setPending(true)
-
-    const formData = new FormData(event.currentTarget)
-    const email = String(formData.get('email') ?? '')
-    const password = String(formData.get('password') ?? '')
 
     try {
-      // redirect after login succeeds
       await login(email, password)
-      navigate('/webhooks', { replace: true })
+      // restore prev destination if it was set, otherwise go to the default page
+      const from = (location.state as LoginLocationState | null)?.from
+      const returnTo =
+        from?.startsWith('/') && !from.startsWith('//') ? from : '/webhooks'
+      navigate(returnTo, { replace: true })
     } catch (error) {
       // show field-specific or general login errors
       if (error instanceof ApiError) {
-        setEmailError(error.fieldErrors.email?.[0] ?? '')
-        setPasswordError(error.fieldErrors.password?.[0] ?? '')
-        if (!error.fieldErrors.email && !error.fieldErrors.password) {
-          setFormError(error.message)
-        }
+        const emailError = error.fieldErrors.email?.[0]
+        const passwordError = error.fieldErrors.password?.[0]
+        if (emailError) setError('email', { type: 'server', message: emailError })
+        if (passwordError) setError('password', { type: 'server', message: passwordError })
+        if (!emailError && !passwordError) setFormError(error.message)
       } else {
         setFormError('Unable to sign in. Please try again.')
       }
-    } finally {
-      // re-enable the form after the request finishes
-      setPending(false)
     }
   }
 
@@ -53,7 +61,7 @@ function LoginPage() {
         </p>
 
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(onSubmit)}
           className="space-y-5 rounded-xl border border-slate-200 bg-white p-6"
         >
           <div>
@@ -65,17 +73,17 @@ function LoginPage() {
             </label>
             <input
               id="email"
-              name="email"
               type="email"
               autoComplete="email"
               required
-              aria-invalid={Boolean(emailError)}
-              aria-describedby={emailError ? 'email-error' : undefined}
+              {...register('email')}
+              aria-invalid={Boolean(errors.email)}
+              aria-describedby={errors.email ? 'email-error' : undefined}
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             />
-            {emailError && (
+            {errors.email && (
               <p id="email-error" className="mt-1 text-sm text-red-600">
-                {emailError}
+                {errors.email.message}
               </p>
             )}
           </div>
@@ -89,17 +97,17 @@ function LoginPage() {
             </label>
             <input
               id="password"
-              name="password"
               type="password"
               autoComplete="current-password"
               required
-              aria-invalid={Boolean(passwordError)}
-              aria-describedby={passwordError ? 'password-error' : undefined}
+              {...register('password')}
+              aria-invalid={Boolean(errors.password)}
+              aria-describedby={errors.password ? 'password-error' : undefined}
               className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
             />
-            {passwordError && (
+            {errors.password && (
               <p id="password-error" className="mt-1 text-sm text-red-600">
-                {passwordError}
+                {errors.password.message}
               </p>
             )}
           </div>
@@ -112,10 +120,10 @@ function LoginPage() {
 
           <button
             type="submit"
-            disabled={pending}
+            disabled={isSubmitting}
             className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {pending ? 'Signing in' : 'Sign in'}
+            {isSubmitting ? 'Signing in' : 'Sign in'}
           </button>
         </form>
       </section>
