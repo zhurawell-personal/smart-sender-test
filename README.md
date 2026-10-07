@@ -22,7 +22,7 @@ The test checks that two requests with an expired session share one session refr
 - Email: `user1@example.com`
 - Password: `user1pass`
 
-- **The app separates API requests, application state, and UI so each part has a clear role. MSW simulates the backend for the login, webhook list, and editing flows.
+- The app separates API requests, application state, and UI so each part has a clear role. MSW simulates the backend for the login, webhook list, and editing flows.
 
 ## Key decisions
 
