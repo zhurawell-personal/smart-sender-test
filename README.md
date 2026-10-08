@@ -56,4 +56,3 @@ The test checks that two requests with an expired session share one session refr
 - React Hook Form manages the login and edit form fields.
 
 Note: Signing in again after a page reload is expected because the mock session is stored in memory.
-e mock session is stored in memory.
